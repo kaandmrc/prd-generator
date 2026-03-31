@@ -1,0 +1,137 @@
+/* --- TAILWIND CSS BYPASS - CUSTOM STYLES --- */
+
+/* Sürükle-Bırak animasyonu sınıfı (Tailwind ile de yazılabilir ancak Script bu state'i veriyor) */
+.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+.card-grip {
+    cursor: grab;
+    color: #a0aabf;
+}
+
+.card-grip:active {
+    cursor: grabbing;
+    color: #253858;
+}
+
+/* Javascript State Sınıfları */
+.modal.show {
+    display: block !important;
+}
+
+.alert-box.show {
+    bottom: 2rem !important;
+}
+
+
+/* ==========================================================
+   A4 DOCUMENT PREVIEW & PDF TEMPLATE
+   (Tailwind utility css ile yazmak HTML2PDF için tutarsızlık 
+   yaratabildiğinden Print template bağımsız tutulmuştur)
+========================================================== */
+
+.document-sheet {
+    margin: 0 auto;
+    background-color: #fff;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 20mm 20mm;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #000;
+    box-sizing: border-box;
+}
+
+.doc-title {
+    font-size: 24pt;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.doc-date {
+    text-align: center;
+    color: #555;
+    font-size: 11pt;
+    margin-bottom: 1.5rem;
+}
+
+.doc-divider {
+    border: 0;
+    border-top: 2px solid #222;
+    margin-bottom: 2rem;
+}
+
+.doc-section {
+    margin-bottom: 1.5rem;
+    page-break-inside: avoid;
+}
+
+.html2pdf__page-break-avoid {
+    page-break-inside: avoid;
+}
+
+.doc-section h2 {
+    font-size: 14pt;
+    font-weight: 600;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    color: #111;
+}
+
+.doc-content {
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #333;
+    white-space: pre-wrap;
+}
+
+.doc-list {
+    font-size: 11pt;
+    line-height: 1.6;
+    padding-left: 0;
+    list-style-position: inside;
+    color: #333;
+    margin-top: 0.5rem;
+}
+
+.doc-list li {
+    margin-bottom: 4px;
+}
+
+.empty-msg {
+    color: #999;
+    font-style: italic;
+    list-style-type: none;
+}
+
+.doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+    font-size: 10pt;
+}
+
+.doc-table th,
+.doc-table td {
+    border: 1px solid #999;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.doc-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.persona-doc-item {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    color: #333;
+}

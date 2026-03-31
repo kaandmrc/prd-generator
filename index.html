@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRD Management - Tailwind</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#253858',
+                        'primary-hover': '#091e42',
+                        danger: '#de350b',
+                        background: '#f4f5f7',
+                        border: '#e2e4e8',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- PDF Export API -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body class="bg-background text-gray-900 font-sans text-sm antialiased">
+    <!-- HEADER -->
+    <header class="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+        <div class="flex items-center">
+            <h1 class="text-xl font-semibold m-0 flex items-center gap-2">
+                <span data-i18n="app_title">PRD Oluşturucu</span> 
+            </h1>
+            <button id="navDashboardBtn" class="hidden ml-4 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-medium py-2 px-3 rounded flex items-center transition-colors">
+                <i data-feather="arrow-left" class="w-4 h-4 mr-2"></i> <span data-i18n="nav_dashboard">PRD Listesine Dön</span>
+            </button>
+        </div>
+        <div class="flex items-center gap-4">
+            <!-- Language Switcher -->
+            <select id="langSwitcher" class="p-2 border border-border rounded-md bg-gray-50 text-sm cursor-pointer outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                <option value="tr">Türkçe</option>
+                <option value="en">English</option>
+            </select>
+            <!-- Editor Actions (Hidden initially) -->
+            <div id="editorActions" class="hidden flex gap-2">
+                <button id="previewBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium text-sm py-2 px-4 rounded flex items-center transition-colors">
+                    <i data-feather="eye" class="w-4 h-4 mr-2"></i> <span data-i18n="btn_preview">Önizleme</span>
+                </button>
+                <button id="exportBtn" class="bg-primary hover:bg-primary-hover text-white font-medium text-sm py-2 px-4 rounded flex items-center transition-colors shadow-[0_1px_2px_rgba(37,56,88,0.2)]">
+                    <i data-feather="download" class="w-4 h-4 mr-2"></i> <span data-i18n="btn_export">PDF İndir</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboard-view" class="hidden p-8 flex-col items-center">
+        <main class="w-full max-w-5xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold mb-1" data-i18n="dashboard_title">PRD Belgeleriniz</h2>
+                    <p class="text-gray-500 text-sm" data-i18n="dashboard_subtitle">Geçmişte oluşturduğunuz veya yeni yaratacağınız gereksinim dokümanlarını buradan yönetin.</p>
+                </div>
+                <button id="createNewPrdBtn" class="bg-primary hover:bg-primary-hover text-white font-medium text-sm py-2 px-5 rounded flex items-center transition-colors shadow-sm">
+                    <i data-feather="plus" class="w-4 h-4 mr-2"></i> <span data-i18n="btn_create_new">Yeni PRD Oluştur</span>
+                </button>
+            </div>
+            
+            <div class="flex flex-col gap-3" id="prdListGrid">
+                <!-- Javascript Injected Tailwind Rows -->
+            </div>
+        </main>
+    </div>
+
+    <!-- EDITOR VIEW -->
+    <div id="editor-view" class="hidden p-8 flex-col items-center">
+        <main class="w-full max-w-4xl mx-auto bg-white border border-border rounded-lg shadow-sm p-10">
+            <div class="mb-8 pb-4 border-b-2 border-border">
+                <input type="text" id="prd_title_input" class="w-full text-2xl font-bold text-gray-900 border border-transparent rounded px-2 py-1 bg-transparent hover:bg-gray-50 focus:bg-white focus:border-primary outline-none transition-colors" data-i18n-placeholder="ph_prd_title" placeholder="Doküman Adı..." />
+            </div>
+            <form id="prdForm" onsubmit="return false;">
+                
+                <div class="mb-8">
+                    <label class="block font-semibold mb-2 text-gray-900">1. <span data-i18n="lbl_summary">Yönetici Özeti</span> <span class="text-danger">*</span></label>
+                    <textarea id="f_summary" rows="3" class="w-full px-4 py-3 border border-border rounded text-sm text-gray-900 bg-gray-50 focus:bg-white focus:outline-none focus:border-primary transition-colors resize-y" data-i18n-placeholder="ph_summary" placeholder="Ürünün ne olduğunu ve neden var olduğunu anlatan 2-3 cümlelik vizyon metni."></textarea>
+                </div>
+                
+                <div class="mb-8">
+                    <label class="block font-semibold mb-2 text-gray-900">2. <span data-i18n="lbl_problem">Problem Tanımı</span></label>
+                    <textarea id="f_problem" rows="3" class="w-full px-4 py-3 border border-border rounded text-sm text-gray-900 bg-gray-50 focus:bg-white focus:outline-none focus:border-primary transition-colors resize-y" data-i18n-placeholder="ph_problem" placeholder="Kullanıcı X işlemini yaparken Y engeliyle karşılaşıyor, bu da Z kaybına yol açıyor."></textarea>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block font-semibold mb-2 text-gray-900">3. <span data-i18n="lbl_goals">Hedefler ve Başarı Metrikleri</span> <span class="text-danger">*</span></label>
+                    <p class="text-xs text-gray-500 mb-3" data-i18n="help_goals">Metrik adı (örn: Dönüşüm) ve hedeflenen rakam/yüzde (örn: %5 Artış).<br/><em>(Maddeleri sıralamak için sollarındaki tutamaçtan sürükleyin)</em></p>
+                    <div class="flex flex-col gap-3 bg-[#fcfcfc] border border-dashed border-[#d1d4d9] rounded p-6">
+                        <div class="flex gap-3 w-full">
+                            <input type="text" id="metric_desc" class="flex-[2] px-4 py-2 border border-border rounded text-sm bg-white focus:outline-none focus:border-primary" data-i18n-placeholder="ph_metric_desc" placeholder="Metrik Açıklaması">
+                            <input type="text" id="metric_val" class="flex-[1] px-4 py-2 border border-border rounded text-sm bg-white focus:outline-none focus:border-primary" data-i18n-placeholder="ph_metric_val" placeholder="Hedef / Sayı">
+                        </div>
+                        <button type="button" onclick="addMetric()" class="mt-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium py-2 px-4 rounded w-max flex items-center transition-colors">
+                            <i data-feather="plus" class="w-4 h-4 mr-1"></i> <span data-i18n="btn_add_metric">Metrik Ekle</span>
+                        </button>
+                    </div>
+                    <div id="editor_metricsList" class="mt-4 flex flex-col gap-2 min-h-[10px]" data-list="metrics"></div>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block font-semibold mb-2 text-gray-900">4. <span data-i18n="lbl_personas">Kullanıcı Personaları ve Hikayeler</span></label>
+                    <p class="text-xs text-gray-500 mb-3" data-i18n="help_personas">Hedef kitle, hikayesi ve altında da bu hikayenin başarı kriteri.</p>
+                    <div class="flex flex-col gap-3 bg-[#fcfcfc] border border-dashed border-[#d1d4d9] rounded p-6">
+                        <div class="flex gap-3 w-full">
+                            <input type="text" id="persona_name" class="flex-[1] px-4 py-2 border border-border rounded text-sm bg-white focus:outline-none focus:border-primary" data-i18n-placeholder="ph_persona_name" placeholder="Persona/Kullanıcı (Örn: Yönetici)">
+                            <input type="text" id="persona_story" class="flex-[2] px-4 py-2 border border-border rounded text-sm bg-white focus:outline-none focus:border-primary" data-i18n-placeholder="ph_persona_story" placeholder="Kullanıcı Hikayesi (Örn: ... raporları hızlıca görmek isterim)">
+                        </div>
+                        <textarea id="persona_criteria" rows="2" class="w-full px-4 py-2 border border-border rounded text-sm bg-white focus:outline-none focus:border-primary resize-y" data-i18n-placeholder="ph_persona_crit" placeholder="Kabul Kriterleri (Acceptance Criteria)..."></textarea>
+                        
+                        <button type="button" onclick="addPersona()" class="mt-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium py-2 px-4 rounded w-max flex items-center transition-colors">
+                            <i data-feather="plus" class="w-4 h-4 mr-1"></i> <span data-i18n="btn_add_story">Hikaye Ekle</span>
+                        </button>
+                    </div>
+                    <div id="editor_personasList" class="mt-4 flex flex-col gap-2 min-h-[10px]" data-list="personas"></div>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block font-semibold mb-2 text-gray-900">5. <span data-i18n="lbl_reqs">Fonksiyonel Gereksinimler</span></label>
+                    <p class="text-xs text-gray-500 mb-3" data-i18n="help_reqs">Sistemin yapması gereken somut işler ve öncelik seviyesi.</p>
+                    <div class="flex flex-col gap-3 bg-[#fcfcfc] border border-dashed border-[#d1d4d9] rounded p-6">
+                        <div class="flex gap-3 w-full">
+                            <input type="text" id="req_feature" class="flex-[1] px-4 py-2 border border-border rounded text-sm bg-white focus:outline-none focus:border-primary" data-i18n-placeholder="ph_req_feature" placeholder="Özellik Adı (Örn: Kayıt Ol)">
+                            <select id="req_priority" class="flex-[0.5] px-4 py-2 border border-border rounded text-sm bg-white focus:outline-none focus:border-primary cursor-pointer">
+                                <option value="P0" data-i18n="prio_0">P0 (Acil)</option>
+                                <option value="P1" data-i18n="prio_1" selected>P1 (Orta)</option>
+                                <option value="P2" data-i18n="prio_2">P2 (Düşük)</option>
+                            </select>
+                        </div>
+                        <textarea id="req_desc" rows="2" class="w-full px-4 py-2 border border-border rounded text-sm bg-white focus:outline-none focus:border-primary resize-y" data-i18n-placeholder="ph_req_desc" placeholder="Detaylı Özellik Açıklaması..."></textarea>
+                        
+                        <button type="button" onclick="addReq()" class="mt-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium py-2 px-4 rounded w-max flex items-center transition-colors">
+                            <i data-feather="plus" class="w-4 h-4 mr-1"></i> <span data-i18n="btn_add_req">Gereksinim Ekle</span>
+                        </button>
+                    </div>
+                    <div id="editor_reqsList" class="mt-4 flex flex-col gap-2 min-h-[10px]" data-list="reqs"></div>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block font-semibold mb-2 text-gray-900">6. <span data-i18n="lbl_ux">Kullanıcı Deneyimi ve Tasarım</span></label>
+                    <textarea id="f_ux" rows="3" class="w-full px-4 py-3 border border-border rounded text-sm text-gray-900 bg-gray-50 focus:bg-white focus:outline-none focus:border-primary transition-colors resize-y" data-i18n-placeholder="ph_ux" placeholder="Kullanıcı akış şemaları (User Flow) ve tasarım/Figma linkleri."></textarea>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block font-semibold mb-2 text-gray-900">7. <span data-i18n="lbl_outofscope">Kapsam Dışı</span> <span class="text-danger">*</span></label>
+                    <textarea id="f_outofscope" rows="3" class="w-full px-4 py-3 border border-border rounded text-sm text-gray-900 bg-gray-50 focus:bg-white focus:outline-none focus:border-primary transition-colors resize-y" data-i18n-placeholder="ph_outofscope" placeholder="Yanlış beklentileri önlemek için bu fazda YAPILMAYACAK işlerin listesi."></textarea>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block font-semibold mb-2 text-gray-900">8. <span data-i18n="lbl_constraints">Teknik Kısıtlamalar</span></label>
+                    <textarea id="f_constraints" rows="3" class="w-full px-4 py-3 border border-border rounded text-sm text-gray-900 bg-gray-50 focus:bg-white focus:outline-none focus:border-primary transition-colors resize-y" data-i18n-placeholder="ph_constraints" placeholder="API gereksinimleri, güvenlik standartları veya performans limitleri."></textarea>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block font-semibold mb-2 text-gray-900">9. <span data-i18n="lbl_edgecases">Uç Durumlar</span></label>
+                    <textarea id="f_edgecases" rows="3" class="w-full px-4 py-3 border border-border rounded text-sm text-gray-900 bg-gray-50 focus:bg-white focus:outline-none focus:border-primary transition-colors resize-y" data-i18n-placeholder="ph_edgecases" placeholder="Hata mesajları, çevrimdışı mod senaryoları ve beklenmedik kullanıcı davranışları."></textarea>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <!-- MODAL OVERLAY FOR PREVIEW -->
+    <!-- Custom `.modal` and `.modal-show` classes remain in style.css for safe PDF render handling -->
+    <div id="previewModal" class="modal fixed inset-0 z-[999] bg-[#091e42b3] backdrop-blur-sm hidden">
+        <div class="absolute top-0 left-0 right-0 h-[60px] bg-primary text-white flex justify-between items-center px-8 shadow-md">
+            <h2 class="text-lg flex items-center gap-2"><i data-feather="file-text"></i> <span data-i18n="modal_title">Doküman Önizlemesi</span></h2>
+            <button class="bg-transparent border-none text-white text-3xl cursor-pointer opacity-80 hover:opacity-100" id="closeModalBtn">&times;</button>
+        </div>
+        <div class="modal-content mt-[60px] h-[calc(100%-60px)] overflow-y-auto block p-8">
+            <!-- THE PRD DOCUMENT SHEET (Independent PDF styling) -->
+            <div id="document-sheet" class="document-sheet">
+                <h1 class="doc-title" id="p_main_title">Product Requirements Document (PRD)</h1>
+                <p class="doc-date" id="p_date"></p>
+                <hr class="doc-divider">
+
+                <section class="doc-section">
+                    <h2>1. <span data-i18n="doc_summary">Yönetici Özeti</span></h2>
+                    <div class="doc-content" id="p_summary"><span class="empty-msg" data-i18n="empty_msg">Henüz girilmedi.</span></div>
+                </section>
+
+                <section class="doc-section html2pdf__page-break-avoid">
+                    <h2>2. <span data-i18n="doc_problem">Problem Tanımı</span></h2>
+                    <div class="doc-content" id="p_problem"><span class="empty-msg" data-i18n="empty_msg">Henüz girilmedi.</span></div>
+                </section>
+
+                <section class="doc-section html2pdf__page-break-avoid">
+                    <h2>3. <span data-i18n="doc_goals">Hedefler ve Başarı Metrikleri</span></h2>
+                    <ul class="doc-list" id="p_metrics">
+                        <li class="empty-msg" data-i18n="empty_msg">Henüz veri girilmedi.</li>
+                    </ul>
+                </section>
+
+                <section class="doc-section html2pdf__page-break-avoid">
+                    <h2>4. <span data-i18n="doc_personas">Kullanıcı Personaları ve Hikayeler</span></h2>
+                    <div class="doc-content" id="p_personas">
+                        <span class="empty-msg !ml-0" data-i18n="empty_msg">Henüz veri girilmedi.</span>
+                    </div>
+                </section>
+
+                <section class="doc-section html2pdf__page-break-avoid">
+                    <h2>5. <span data-i18n="doc_reqs">Fonksiyonel Gereksinimler</span></h2>
+                    <table class="doc-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%" data-i18n="tbl_prio">Öncelik & Özellik</th>
+                                <th style="width: 80%" data-i18n="tbl_desc">Açıklama</th>
+                            </tr>
+                        </thead>
+                        <tbody id="p_requirements_body">
+                             <!-- JS injected rows -->
+                        </tbody>
+                    </table>
+                    <div id="p_requirements_empty" class="doc-content empty-msg mt-2" data-i18n="empty_msg">Henüz veri girilmedi.</div>
+                </section>
+
+                <section class="doc-section html2pdf__page-break-avoid">
+                    <h2>6. <span data-i18n="doc_ux">Kullanıcı Deneyimi ve Tasarım</span></h2>
+                    <div class="doc-content" id="p_ux"><span class="empty-msg" data-i18n="empty_msg">Henüz girilmedi.</span></div>
+                </section>
+
+                <section class="doc-section html2pdf__page-break-avoid">
+                    <h2>7. <span data-i18n="doc_outofscope">Kapsam Dışı</span></h2>
+                    <div class="doc-content" id="p_outofscope"><span class="empty-msg" data-i18n="empty_msg">Henüz girilmedi.</span></div>
+                </section>
+
+                <section class="doc-section html2pdf__page-break-avoid">
+                    <h2>8. <span data-i18n="doc_constraints">Teknik Kısıtlamalar</span></h2>
+                    <div class="doc-content" id="p_constraints"><span class="empty-msg" data-i18n="empty_msg">Henüz girilmedi.</span></div>
+                </section>
+
+                <section class="doc-section html2pdf__page-break-avoid">
+                    <h2>9. <span data-i18n="doc_edgecases">Uç Durumlar</span></h2>
+                    <div class="doc-content" id="p_edgecases"><span class="empty-msg" data-i18n="empty_msg">Henüz girilmedi.</span></div>
+                </section>
+                
+            </div>
+        </div>
+    </div> <!-- /Modal -->
+
+    <!-- Alerts (Tailwind absolute positioning handled in JS mostly, but keeping base styles) -->
+    <div id="alertBox" class="fixed bottom-[-100px] left-1/2 -translate-x-1/2 bg-danger text-white px-8 py-4 rounded-lg font-medium z-[2000] transition-all duration-400 ease-out shadow-lg">
+        <span id="alertMessage"></span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
